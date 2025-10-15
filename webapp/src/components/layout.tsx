@@ -1,25 +1,34 @@
 'use client';
 
 import { useState } from 'react';
-import { Bell, Search, Settings, User, Moon, Sun, LogOut } from 'lucide-react';
+import { Search, User, Moon, Sun, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/auth-context';
 import Sidebar from './sidebar';
 import Image from 'next/image';
+import { FaEllipsisVertical } from 'react-icons/fa6';
+import { useAppDispatch } from '@/store/hooks';
+import { toggleDarkMode, toggleMobileSidebar } from '@/store/toggleSlice';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
 
 interface LayoutProps {
     children: React.ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
-    const [isDarkMode, setIsDarkMode] = useState(false);
+    const dispatch = useAppDispatch();
     const { user, logout } = useAuth();
 
-    const toggleDarkMode = () => {
-        setIsDarkMode(!isDarkMode);
-        // In a real app, you'd implement proper dark mode logic here
-        document.documentElement.classList.toggle('dark');
+    const { isDarkMode } = useSelector((state: RootState) => state.toggleReducer);
+
+    const handleToggleDarkMode = () => {
+        dispatch(toggleDarkMode());
+    };
+
+    const handleOpenSidebar = () => {
+        dispatch(toggleMobileSidebar());
     };
 
     const handleLogout = () => {
@@ -38,6 +47,7 @@ export default function Layout({ children }: LayoutProps) {
                     <header className="bg-card border-b border-border px-6 py-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4">
+                                <FaEllipsisVertical className="block lg:hidden" onClick={handleOpenSidebar} />
                                 <h1 className="text-2xl font-display font-semibold text-foreground">Dashboard</h1>
                                 <div className="hidden md:flex items-center space-x-2 text-sm text-muted-foreground">
                                     <span>/</span>
@@ -56,21 +66,13 @@ export default function Layout({ children }: LayoutProps) {
                                 </div>
 
                                 {/* Theme Toggle */}
-                                <Button variant="ghost" size="sm" onClick={toggleDarkMode} className="h-9 w-9 p-0">
-                                    {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                                </Button>
-
-                                {/* Notifications */}
-                                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 relative">
-                                    <Bell className="w-4 h-4" />
-                                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-                                        <span className="text-xs text-white font-bold">3</span>
-                                    </span>
-                                </Button>
-
-                                {/* Settings */}
-                                <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
-                                    <Settings className="w-4 h-4" />
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleToggleDarkMode}
+                                    className="h-9 w-9 p-0"
+                                >
+                                    {isDarkMode ? <Sun className="text-black dark:text-white w-4 h-4" /> : <Moon className="text-black dark:text-white w-4 h-4" />}
                                 </Button>
 
                                 {/* User Profile */}
@@ -101,7 +103,7 @@ export default function Layout({ children }: LayoutProps) {
                                         className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
                                         title="Logout"
                                     >
-                                        <LogOut className="w-4 h-4" />
+                                        <LogOut className="text-black dark:text-white w-4 h-4" />
                                     </Button>
                                 </div>
                             </div>

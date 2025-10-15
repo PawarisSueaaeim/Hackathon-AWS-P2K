@@ -19,7 +19,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/auth-context';
+import { useAppDispatch } from '@/store/hooks';
+import { toggleMobileSidebar, closeMobileSidebar } from '@/store/toggleSlice';
 import Image from 'next/image';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
 
 interface NavItem {
     name: string;
@@ -50,7 +54,9 @@ const navigation: NavItem[] = [
 
 export default function Sidebar() {
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const { isMobileSidebarOpen } = useSelector((state: RootState) => state.toggleReducer);
+
+    const dispatch = useAppDispatch();
     const pathname = usePathname();
     const { user, logout } = useAuth();
 
@@ -58,8 +64,8 @@ export default function Sidebar() {
         setIsCollapsed(!isCollapsed);
     };
 
-    const toggleMobileSidebar = () => {
-        setIsMobileOpen(!isMobileOpen);
+    const handleToggleMobile = () => {
+        dispatch(toggleMobileSidebar());
     };
 
     const handleLogout = () => {
@@ -201,12 +207,12 @@ export default function Sidebar() {
     return (
         <>
             {/* Mobile Overlay */}
-            {isMobileOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={toggleMobileSidebar} />}
+            {isMobileSidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => dispatch(closeMobileSidebar())} />}
 
             {/* Mobile Sidebar */}
             <div
                 className={`fixed inset-y-0 left-0 lg:hidden z-50 transform transition-transform duration-300 ${
-                    isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+                    isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
                 <SidebarContent />
@@ -225,8 +231,8 @@ export default function Sidebar() {
                     </div>
                     <span className="font-display font-bold text-lg text-sidebar-foreground">AI Platform</span>
                 </div>
-                <Button variant="ghost" size="sm" onClick={toggleMobileSidebar} className="h-8 w-8 p-0">
-                    {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                <Button variant="ghost" size="sm" onClick={handleToggleMobile} className="h-8 w-8 p-0">
+                    {isMobileSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                 </Button>
             </div>
         </>
