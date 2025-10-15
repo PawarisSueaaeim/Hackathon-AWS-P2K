@@ -35,20 +35,15 @@ interface NavItem {
 
 const navigation: NavItem[] = [
     {
-        name: 'Dashboard',
+        name: 'Home',
         href: '/',
         icon: Home,
     },
     {
-        name: 'AI Assistants',
+        name: 'Friends',
         href: '/assistants',
         icon: Bot,
         badge: 'New',
-    },
-    {
-        name: 'Conversations',
-        href: '/conversations',
-        icon: MessageSquare,
     },
 ];
 
