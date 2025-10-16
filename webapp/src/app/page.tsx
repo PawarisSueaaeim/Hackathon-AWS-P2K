@@ -1,4 +1,3 @@
-import Layout from '@/components/layout';
 import ProtectedRoute from '@/components/protected-route';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,10 +5,9 @@ import { Bot, MessageSquare, BarChart3, Users, TrendingUp, Activity, Zap, Brain,
 import Image from 'next/image';
 
 export default function Home() {
-  return (
+    return (
         <ProtectedRoute>
-            <Layout>
-                <div className="space-y-8">
+            <div className="space-y-8">
                 {/* Welcome Section */}
                 <div className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-indigo-500/10 rounded-2xl p-8 border border-border/50">
                     <div className="flex items-center justify-between">
@@ -22,14 +20,14 @@ export default function Home() {
                             </p>
                         </div>
                         <div className="hidden lg:flex items-center space-x-4">
-        <Image
+                            <Image
                                 src="/pic/ai-man.png"
                                 alt="AI Assistant - Male"
                                 width={120}
                                 height={180}
                                 className="drop-shadow-lg"
                             />
-            <Image
+                            <Image
                                 src="/pic/ai-woman.png"
                                 alt="AI Assistant - Female"
                                 width={120}
@@ -170,7 +168,7 @@ export default function Home() {
                             </div>
                         </CardContent>
                     </Card>
-        </div>
+                </div>
 
                 {/* AI Assistants Preview */}
                 <Card className="border-border/50">
@@ -183,7 +181,7 @@ export default function Home() {
                     <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="flex items-center space-x-4 p-4 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border border-blue-200/50 dark:border-blue-800/50">
-          <Image
+                                <Image
                                     src="/pic/ai-man.png"
                                     alt="AI Assistant - Male"
                                     width={80}
@@ -203,7 +201,7 @@ export default function Home() {
                             </div>
 
                             <div className="flex items-center space-x-4 p-4 rounded-lg bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-950/30 dark:to-orange-950/30 border border-pink-200/50 dark:border-pink-800/50">
-          <Image
+                                <Image
                                     src="/pic/ai-woman.png"
                                     alt="AI Assistant - Female"
                                     width={80}
@@ -224,8 +222,7 @@ export default function Home() {
                         </div>
                     </CardContent>
                 </Card>
-                </div>
-            </Layout>
+            </div>
         </ProtectedRoute>
     );
 }

@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { getAllFontVariables } from '@/lib/fonts';
 import { AuthProvider } from '@/contexts/auth-context';
+import { ReduxProvider } from '@/store/providers';
+import Layout from '@/components/layout';
 
 export const metadata: Metadata = {
     title: 'AI Platform - Hackathon Agentic AI',
@@ -23,9 +25,13 @@ export default function RootLayout({
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
             </head>
             <body className={`${getAllFontVariables()} font-sans antialiased`} suppressHydrationWarning>
-                <AuthProvider>
-                    {children}
-                </AuthProvider>
+                <ReduxProvider>
+                    <AuthProvider>
+                        <Layout>
+                            {children}
+                        </Layout>
+                    </AuthProvider>
+                </ReduxProvider>
             </body>
         </html>
     );

@@ -19,7 +19,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/auth-context';
+import { useAppDispatch } from '@/store/hooks';
+import { toggleMobileSidebar, closeMobileSidebar } from '@/store/toggleSlice';
 import Image from 'next/image';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { FaArrowLeftLong } from 'react-icons/fa6';
 
 interface NavItem {
     name: string;
@@ -31,26 +36,23 @@ interface NavItem {
 
 const navigation: NavItem[] = [
     {
-        name: 'Dashboard',
+        name: 'Home',
         href: '/',
         icon: Home,
     },
     {
-        name: 'AI Assistants',
+        name: 'Friends',
         href: '/assistants',
         icon: Bot,
         badge: 'New',
-    },
-    {
-        name: 'Conversations',
-        href: '/conversations',
-        icon: MessageSquare,
     },
 ];
 
 export default function Sidebar() {
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const { isMobileSidebarOpen } = useSelector((state: RootState) => state.toggleReducer);
+
+    const dispatch = useAppDispatch();
     const pathname = usePathname();
     const { user, logout } = useAuth();
 
@@ -58,8 +60,8 @@ export default function Sidebar() {
         setIsCollapsed(!isCollapsed);
     };
 
-    const toggleMobileSidebar = () => {
-        setIsMobileOpen(!isMobileOpen);
+    const handleToggleMobile = () => {
+        dispatch(toggleMobileSidebar());
     };
 
     const handleLogout = () => {
@@ -83,7 +85,7 @@ export default function Sidebar() {
                         <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                             <Bot className="w-5 h-5 text-white" />
                         </div>
-                        <span className="font-display font-bold text-lg text-sidebar-foreground">AI Platform</span>
+                        <span className="font-display font-bold text-lg text-sidebar-foreground">P2K</span>
                     </div>
                 )}
                 <Button
@@ -92,7 +94,15 @@ export default function Sidebar() {
                     onClick={toggleSidebar}
                     className="hidden lg:flex h-8 w-8 p-0 hover:bg-sidebar-accent"
                 >
-                    {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                    {isCollapsed ? <ChevronRight className="w-4 h-4 text-black dark:text-white" /> : <ChevronLeft className="w-4 h-4 text-black dark:text-white" />}
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleToggleMobile}
+                    className="flex lg:hidden h-8 w-8 p-0 hover:bg-sidebar-accent"
+                >
+                    <FaArrowLeftLong className="w-4 h-4 text-black dark:text-white" />
                 </Button>
             </div>
 
@@ -201,12 +211,12 @@ export default function Sidebar() {
     return (
         <>
             {/* Mobile Overlay */}
-            {isMobileOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={toggleMobileSidebar} />}
+            {isMobileSidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => dispatch(closeMobileSidebar())} />}
 
             {/* Mobile Sidebar */}
             <div
                 className={`fixed inset-y-0 left-0 lg:hidden z-50 transform transition-transform duration-300 ${
-                    isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+                    isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
                 <SidebarContent />
@@ -218,15 +228,15 @@ export default function Sidebar() {
             </div>
 
             {/* Mobile Header */}
-            <div className="hidden flex items-center justify-between p-4 bg-sidebar border-b border-sidebar-border">
+            <div className="hidden items-center justify-between p-4 bg-sidebar border-b border-sidebar-border">
                 <div className="flex items-center space-x-2">
                     <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                         <Bot className="w-5 h-5 text-white" />
                     </div>
                     <span className="font-display font-bold text-lg text-sidebar-foreground">AI Platform</span>
                 </div>
-                <Button variant="ghost" size="sm" onClick={toggleMobileSidebar} className="h-8 w-8 p-0">
-                    {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                <Button variant="ghost" size="sm" onClick={handleToggleMobile} className="h-8 w-8 p-0">
+                    {isMobileSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                 </Button>
             </div>
         </>
