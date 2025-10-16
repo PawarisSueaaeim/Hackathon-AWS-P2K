@@ -3,6 +3,7 @@ import './globals.css';
 import { getAllFontVariables } from '@/lib/fonts';
 import { AuthProvider } from '@/contexts/auth-context';
 import { ReduxProvider } from '@/store/providers';
+import Layout from '@/components/layout';
 
 export const metadata: Metadata = {
     title: 'AI Platform - Hackathon Agentic AI',
@@ -26,7 +27,9 @@ export default function RootLayout({
             <body className={`${getAllFontVariables()} font-sans antialiased`} suppressHydrationWarning>
                 <ReduxProvider>
                     <AuthProvider>
-                        {children}
+                        <Layout>
+                            {children}
+                        </Layout>
                     </AuthProvider>
                 </ReduxProvider>
             </body>

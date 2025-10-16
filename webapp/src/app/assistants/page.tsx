@@ -1,4 +1,3 @@
-'use client';
 import SimliAvatar from '@/components/modules/SimliAvatar';
 import React from 'react';
 
