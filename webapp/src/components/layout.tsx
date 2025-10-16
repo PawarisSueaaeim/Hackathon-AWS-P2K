@@ -47,7 +47,7 @@ export default function Layout({ children }: LayoutProps) {
                     <header className="bg-card border-b border-border px-6 py-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4">
-                                <FaEllipsisVertical className="block lg:hidden" onClick={handleOpenSidebar} />
+                                <FaEllipsisVertical className="block lg:hidden text-black dark:text-white" onClick={handleOpenSidebar} />
                                 <h1 className="text-2xl font-display font-semibold text-foreground">Dashboard</h1>
                                 <div className="hidden md:flex items-center space-x-2 text-sm text-muted-foreground">
                                     <span>/</span>

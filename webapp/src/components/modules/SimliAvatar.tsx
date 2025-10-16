@@ -210,48 +210,101 @@ const SimliAvatar = () => {
     }, [isRecording]);
 
     return (
-        <div>
-            {isInitializing && (
-                <p style={{ color: '#666', marginBottom: '0.5rem', fontSize: '14px' }}>
-                    🔄 Initializing avatar...
-                </p>
-            )}
-            {!isInitializing && !isClientConnected && (
-                <p style={{ color: '#ff9800', marginBottom: '0.5rem', fontSize: '14px' }}>
-                    ⚠️ Avatar not connected. Mic recording will not work.
-                </p>
-            )}
-            {isClientConnected && (
-                <p style={{ color: '#4caf50', marginBottom: '0.5rem', fontSize: '14px' }}>
-                    ✅ Avatar connected
-                </p>
-            )}
-            <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                style={{ width: '300px', height: '300px', border: '1px solid black' }}
-            >
-                <track kind="captions" label="Avatar video" />
-            </video>
+        <div className='w-full'>
+            {/* Status Indicator */}
+            <div className='mb-6'>
+                {isInitializing && (
+                    <div className='flex items-center gap-2 p-3 bg-slate-100 dark:bg-slate-700 rounded-lg'>
+                        <div className='animate-spin h-4 w-4 border-2 border-slate-400 border-t-transparent rounded-full'></div>
+                        <span className='text-sm font-medium text-slate-600 dark:text-slate-300'>
+                            Initializing avatar...
+                        </span>
+                    </div>
+                )}
+                {!isInitializing && !isClientConnected && (
+                    <div className='flex items-center gap-2 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg'>
+                        <span className='text-orange-600 dark:text-orange-400 text-lg'>⚠️</span>
+                        <span className='text-sm font-medium text-orange-700 dark:text-orange-300'>
+                            Avatar not connected. Mic recording will not work.
+                        </span>
+                    </div>
+                )}
+                {isClientConnected && (
+                    <div className='flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg'>
+                        <span className='text-green-600 dark:text-green-400 text-lg'>✅</span>
+                        <span className='text-sm font-medium text-green-700 dark:text-green-300'>
+                            Avatar connected and ready
+                        </span>
+                    </div>
+                )}
+            </div>
+
+            {/* Avatar Video Container */}
+            <div className='relative mb-6 flex justify-center'>
+                <div className='relative rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-200 dark:border-slate-700 bg-black'>
+                    <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        className='w-full max-w-md aspect-square object-cover'
+                    >
+                        <track kind="captions" label="Avatar video" />
+                    </video>
+                    {/* Recording Indicator Overlay */}
+                    {isRecording && (
+                        <div className='absolute top-4 right-4 flex items-center gap-2 px-3 py-2 bg-red-500/90 backdrop-blur-sm rounded-full'>
+                            <div className='w-2 h-2 bg-white rounded-full animate-pulse'></div>
+                            <span className='text-xs font-semibold text-white'>Recording</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+
             <audio ref={audioRef} autoPlay>
                 <track kind="captions" label="Avatar audio" />
             </audio>
 
-            <br />
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <Button onClick={handleSendData} disabled={!client || !isClientConnected}>
-                    Send Test Audio
-                </Button>
-                <Button 
-                    onClick={handleToggleMic} 
-                    variant={isRecording ? 'destructive' : 'default'}
-                    disabled={!isClientConnected}
-                >
-                    {isRecording ? '🛑 Stop Mic' : '🎤 Start Mic'}
-                </Button>
+            {/* Controls Section */}
+            <div className='space-y-4'>
+                <div className='flex flex-col sm:flex-row gap-3 justify-center'>
+                    <Button 
+                        onClick={handleToggleMic} 
+                        variant={isRecording ? 'destructive' : 'default'}
+                        disabled={!isClientConnected}
+                        className='flex items-center gap-2 px-6 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all'
+                    >
+                        {isRecording ? (
+                            <>
+                                <span className='text-xl'>🛑</span>
+                                <span>Stop Recording</span>
+                            </>
+                        ) : (
+                            <>
+                                <span className='text-xl'>🎤</span>
+                                <span>Start Recording</span>
+                            </>
+                        )}
+                    </Button>
+                </div>
+
+                {/* Error Message */}
+                {micError && (
+                    <div className='p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg'>
+                        <p className='text-sm font-medium text-red-700 dark:text-red-300 text-center'>
+                            ❌ {micError}
+                        </p>
+                    </div>
+                )}
+
+                {/* Instructions */}
+                {isClientConnected && !isRecording && (
+                    <div className='text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800'>
+                        <p className='text-sm text-blue-700 dark:text-blue-300 font-medium'>
+                            💡 Click &quot;Start Recording&quot; and speak to interact with the AI assistant
+                        </p>
+                    </div>
+                )}
             </div>
-            {micError && <p style={{ color: 'red', marginTop: '0.5rem', fontSize: '14px' }}>{micError}</p>}
         </div>
     );
 };

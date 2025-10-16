@@ -24,6 +24,7 @@ import { toggleMobileSidebar, closeMobileSidebar } from '@/store/toggleSlice';
 import Image from 'next/image';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import { FaArrowLeftLong } from 'react-icons/fa6';
 
 interface NavItem {
     name: string;
@@ -84,7 +85,7 @@ export default function Sidebar() {
                         <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                             <Bot className="w-5 h-5 text-white" />
                         </div>
-                        <span className="font-display font-bold text-lg text-sidebar-foreground">AI Platform</span>
+                        <span className="font-display font-bold text-lg text-sidebar-foreground">P2K</span>
                     </div>
                 )}
                 <Button
@@ -93,7 +94,15 @@ export default function Sidebar() {
                     onClick={toggleSidebar}
                     className="hidden lg:flex h-8 w-8 p-0 hover:bg-sidebar-accent"
                 >
-                    {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                    {isCollapsed ? <ChevronRight className="w-4 h-4 text-black dark:text-white" /> : <ChevronLeft className="w-4 h-4 text-black dark:text-white" />}
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleToggleMobile}
+                    className="flex lg:hidden h-8 w-8 p-0 hover:bg-sidebar-accent"
+                >
+                    <FaArrowLeftLong className="w-4 h-4 text-black dark:text-white" />
                 </Button>
             </div>
 
@@ -219,7 +228,7 @@ export default function Sidebar() {
             </div>
 
             {/* Mobile Header */}
-            <div className="hidden flex items-center justify-between p-4 bg-sidebar border-b border-sidebar-border">
+            <div className="hidden items-center justify-between p-4 bg-sidebar border-b border-sidebar-border">
                 <div className="flex items-center space-x-2">
                     <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                         <Bot className="w-5 h-5 text-white" />
