@@ -1,297 +1,219 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { SimliClient } from 'simli-client';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Mic, MicOff, Send } from 'lucide-react';
 
-const SimliAvatar = () => {
-    // 1. สร้าง Ref เพื่ออ้างอิงถึง <video> และ <audio> elements
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const audioRef = useRef<HTMLAudioElement>(null);
+// Extend Window interface to include Speech Recognition
+declare global {
+    interface Window {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        SpeechRecognition: any;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        webkitSpeechRecognition: any;
+    }
+}
 
-    // 2. สร้าง State เพื่อเก็บ instance ของ simliClient
-    const [client, setClient] = useState<SimliClient | null>(null);
-    const [isInitializing, setIsInitializing] = useState(true);
-    const [isClientConnected, setIsClientConnected] = useState(false);
+interface SpeechRecognitionEvent {
+    resultIndex: number;
+    results: {
+        length: number;
+        item(index: number): SpeechRecognitionResult;
+        [index: number]: SpeechRecognitionResult;
+        isFinal: boolean;
+    };
+}
 
-    // 3. State และ Refs สำหรับไมโครโฟน
-    const [isRecording, setIsRecording] = useState(false);
-    const [micError, setMicError] = useState<string | null>(null);
-    const mediaStreamRef = useRef<MediaStream | null>(null);
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const workletNodeRef = useRef<AudioWorkletNode | null>(null);
+interface SpeechRecognitionResult {
+    0: {
+        transcript: string;
+    };
+    isFinal: boolean;
+}
 
+interface SpeechRecognitionErrorEvent {
+    error: string;
+}
+
+interface VoiceTextInputProps {
+    onSubmit?: (text: string) => void;
+    placeholder?: string;
+}
+
+const VoiceTextInput = ({ onSubmit, placeholder = 'พิมพ์ข้อความหรือกดไมค์เพื่อพูด...' }: VoiceTextInputProps) => {
+    // State สำหรับ input text
+    const [inputText, setInputText] = useState('');
+    
+    // State สำหรับ Speech Recognition
+    const [isListening, setIsListening] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const recognitionRef = useRef<any>(null);
+
+    // Initialize Speech Recognition
     useEffect(() => {
-        // รอให้ refs พร้อมก่อน initialize
-        const initializeSimli = () => {
-            if (!videoRef.current || !audioRef.current) {
-                console.warn('Refs not ready yet, retrying...');
-                // Retry after a short delay
-                setTimeout(initializeSimli, 100);
-                return;
+        // Check if browser supports Speech Recognition
+        if (globalThis.window) {
+            const SpeechRecognition = globalThis.window.SpeechRecognition || globalThis.window.webkitSpeechRecognition;
+            
+            if (SpeechRecognition) {
+                const recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = 'th-TH'; // ภาษาไทย, เปลี่ยนเป็น 'en-US' ถ้าต้องการภาษาอังกฤษ
+
+                recognition.onresult = (event: SpeechRecognitionEvent) => {
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript + ' ';
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+
+                    // Update input with final or interim transcript
+                    if (finalTranscript) {
+                        setInputText(prev => prev + finalTranscript);
+                    } else if (interimTranscript) {
+                        setInputText(prev => {
+                            const lastSpace = prev.lastIndexOf(' ');
+                            return prev.substring(0, lastSpace + 1) + interimTranscript;
+                        });
+                    }
+                };
+
+                recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+                    console.error('Speech recognition error:', event.error);
+                    setError(`เกิดข้อผิดพลาด: ${event.error}`);
+                    setIsListening(false);
+                };
+
+                recognition.onend = () => {
+                    setIsListening(false);
+                };
+
+                recognitionRef.current = recognition;
+            } else {
+                setError('เบราว์เซอร์นี้ไม่รองรับการรับรู้เสียง');
             }
-
-            console.log('✅ Refs are ready, initializing SimliClient...');
-            const simliClient = new SimliClient();
-
-            simliClient.Initialize({
-                apiKey: process.env.NEXT_PUBLIC_SIMLI_API_KEY || '',
-                faceID: process.env.NEXT_PUBLIC_SIMLI_FACE_ID || '',
-                handleSilence: true, // keep the face moving while in idle
-                maxSessionLength: 3600, // in seconds
-                maxIdleTime: 600, // in seconds
-                videoRef: videoRef.current,
-                audioRef: audioRef.current,
-                enableConsoleLogs: true,
-                session_token: '',
-                SimliURL: '',
-                maxRetryAttempts: 3,
-                retryDelay_ms: 300,
-                videoReceivedTimeout: 0,
-                model: '',
-            });
-
-            simliClient.start();
-
-            simliClient.on('connected', () => {
-                console.log('✅ SimliClient connected');
-                setClient(simliClient);
-                setIsClientConnected(true);
-                setIsInitializing(false);
-            });
-
-            simliClient.on('failed', () => {
-                console.error('❌ SimliClient failed to connect.');
-                setIsClientConnected(false);
-                setIsInitializing(false);
-            });
-
-            simliClient.on('disconnected', () => {
-                console.warn('⚠️ SimliClient disconnected');
-                setIsClientConnected(false);
-            });
-        };
-
-        initializeSimli();
+        }
 
         return () => {
-            // Cleanup will be handled by simliClient.close() when it exists
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
         };
     }, []);
 
-    // ฟังก์ชันแปลง Float32Array (-1.0 to 1.0) เป็น 16-bit PCM Uint8Array
-    const float32ToPCM16 = (float32Array: Float32Array): Uint8Array => {
-        const buffer = new ArrayBuffer(float32Array.length * 2); // 2 bytes per sample (16-bit)
-        const view = new DataView(buffer);
-
-        let offset = 0;
-        for (const sample of float32Array) {
-            // Clamp sample to [-1, 1]
-            const s = Math.max(-1, Math.min(1, sample));
-            // Convert to 16-bit integer (-32768 to 32767)
-            const int16 = s < 0 ? s * 0x8000 : s * 0x7fff;
-            view.setInt16(offset, int16, true); // true = little-endian
-            offset += 2;
+    // Toggle voice recording
+    const toggleVoiceRecording = () => {
+        if (!recognitionRef.current) {
+            setError('ไม่สามารถใช้งานการรับรู้เสียงได้');
+            return;
         }
 
-        return new Uint8Array(buffer);
-    };
-
-    // ฟังก์ชันหยุดบันทึกเสียง
-    const stopRecording = () => {
-        setIsRecording(false);
-        if (workletNodeRef.current) {
-            workletNodeRef.current.disconnect();
-        }
-        if (audioContextRef.current) {
-            audioContextRef.current.close().catch(() => {});
-        }
-        if (mediaStreamRef.current) {
-            mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-        }
-        workletNodeRef.current = null;
-        audioContextRef.current = null;
-        mediaStreamRef.current = null;
-    };
-
-    // ฟังก์ชันเริ่มบันทึกเสียงจากไมโครโฟน
-    const startRecording = async () => {
-        if (isRecording) return;
-        setMicError(null);
-
-        try {
-            // ขออนุญาตเข้าถึงไมโครโฟน
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaStreamRef.current = stream;
-
-            // สร้าง AudioContext
-            const audioCtx = new AudioContext();
-            audioContextRef.current = audioCtx;
-
-            // Create inline AudioWorklet processor
-            const processorCode = `
-                class AudioProcessor extends AudioWorkletProcessor {
-                    process(inputs) {
-                        const input = inputs[0];
-                        if (input.length > 0) {
-                            const inputData = input[0]; // Float32Array
-                            this.port.postMessage(inputData);
-                        }
-                        return true;
-                    }
-                }
-                registerProcessor('audio-processor', AudioProcessor);
-            `;
-
-            const blob = new Blob([processorCode], { type: 'application/javascript' });
-            const processorUrl = URL.createObjectURL(blob);
-
-            await audioCtx.audioWorklet.addModule(processorUrl);
-            URL.revokeObjectURL(processorUrl);
-
-            const source = audioCtx.createMediaStreamSource(stream);
-            const workletNode = new AudioWorkletNode(audioCtx, 'audio-processor');
-            workletNodeRef.current = workletNode;
-
-            workletNode.port.onmessage = (event) => {
-                const inputData = event.data; // Float32Array
-
-                // แปลง Float32 เป็น PCM16 Uint8Array
-                const pcm16Data = float32ToPCM16(inputData);
-
-                // ส่งข้อมูลไปยัง SimliClient (ตรวจสอบ connection state ก่อน)
-                if (client && isClientConnected) {
-                    try {
-                        // client.sendAudioData(pcm16Data);
-                        console.log(pcm16Data);
-                        console.log('🎵 Sent:', pcm16Data.length, 'bytes');
-                    } catch (error) {
-                        console.error('❌ Error sending audio:', error);
-                    }
-                } else {
-                    console.warn('⚠️ Client not connected, skipping chunk');
-                }
-            };
-
-            source.connect(workletNode);
-            workletNode.connect(audioCtx.destination);
-
-            setIsRecording(true);
-            console.log('✅ Recording started');
-        } catch (err) {
-            console.error('❌ Microphone error:', err);
-            setMicError(err instanceof Error ? err.message : 'ไม่สามารถเข้าถึงไมโครโฟน');
-        }
-    };
-
-    // ปุ่ม toggle เปิด/ปิดไมค์
-    const handleToggleMic = () => {
-        if (isRecording) {
-            stopRecording();
+        if (isListening) {
+            recognitionRef.current.stop();
+            setIsListening(false);
         } else {
-            startRecording();
+            setError(null);
+            try {
+                recognitionRef.current.start();
+                setIsListening(true);
+            } catch (err) {
+                console.error('Error starting recognition:', err);
+                setError('ไม่สามารถเริ่มการรับรู้เสียงได้');
+            }
         }
     };
 
-    // Cleanup เมื่อ component ถูก unmount
-    useEffect(() => {
-        return () => {
-            if (isRecording) {
-                stopRecording();
+    // Handle form submit
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (inputText.trim()) {
+            if (onSubmit) {
+                onSubmit(inputText.trim());
             }
-        };
-    }, [isRecording]);
+            console.log('📤 Submitted text:', inputText.trim());
+            setInputText('');
+        }
+    };
+
+    // Handle input change
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setInputText(e.target.value);
+    };
 
     return (
-        <div className="w-full">
+        <div className="w-full max-w-4xl mx-auto">
             {/* Status Indicator */}
-            <div className="mb-6">
-                {isInitializing && (
-                    <div className="flex items-center gap-2 p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                        <div className="animate-spin h-4 w-4 border-2 border-slate-400 border-t-transparent rounded-full"></div>
-                        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                            Initializing avatar...
-                        </span>
-                    </div>
-                )}
-                {!isInitializing && !isClientConnected && (
-                    <div className="flex items-center gap-2 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-                        <span className="text-orange-600 dark:text-orange-400 text-lg">⚠️</span>
-                        <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                            Avatar not connected. Mic recording will not work.
-                        </span>
-                    </div>
-                )}
-                {isClientConnected && (
-                    <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                        <span className="text-green-600 dark:text-green-400 text-lg">✅</span>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                            Avatar connected and ready
-                        </span>
-                    </div>
-                )}
-            </div>
-
-            {/* Avatar Video Container */}
-            <div className="relative mb-6 flex justify-center">
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-200 dark:border-slate-700 bg-black">
-                    <video ref={videoRef} autoPlay playsInline className="w-full max-w-md aspect-square object-cover">
-                        <track kind="captions" label="Avatar video" />
-                    </video>
-                    {/* Recording Indicator Overlay */}
-                    {isRecording && (
-                        <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-2 bg-red-500/90 backdrop-blur-sm rounded-full">
-                            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                            <span className="text-xs font-semibold text-white">Recording</span>
-                        </div>
-                    )}
+            {isListening && (
+                <div className="mb-4 flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-medium text-red-700 dark:text-red-300">
+                        🎤 กำลังฟัง...
+                    </span>
                 </div>
-            </div>
+            )}
 
-            <audio ref={audioRef} autoPlay>
-                <track kind="captions" label="Avatar audio" />
-            </audio>
+            {/* Error Message */}
+            {error && (
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <p className="text-sm font-medium text-red-700 dark:text-red-300">❌ {error}</p>
+                </div>
+            )}
 
-            {/* Controls Section */}
-            <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {/* Input Form */}
+            <form onSubmit={handleSubmit} className="relative">
+                <div className="flex gap-2 items-center p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700">
+                    {/* Text Input */}
+                    <Input
+                        type="text"
+                        value={inputText}
+                        onChange={handleInputChange}
+                        placeholder={placeholder}
+                        className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-base bg-transparent"
+                    />
+
+                    {/* Voice Button */}
                     <Button
-                        onClick={handleToggleMic}
-                        variant={isRecording ? 'destructive' : 'default'}
-                        // disabled={!isClientConnected}
-                        className="flex items-center gap-2 px-6 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
+                        type="button"
+                        onClick={toggleVoiceRecording}
+                        variant={isListening ? 'destructive' : 'outline'}
+                        size="icon"
+                        className="h-10 w-10 rounded-full shrink-0"
                     >
-                        {isRecording ? (
-                            <>
-                                <span className="text-xl">🛑</span>
-                                <span>Stop Recording</span>
-                            </>
+                        {isListening ? (
+                            <MicOff className="h-5 w-5" />
                         ) : (
-                            <>
-                                <span className="text-xl">🎤</span>
-                                <span>Start Recording</span>
-                            </>
+                            <Mic className="h-5 w-5" />
                         )}
                     </Button>
+
+                    {/* Send Button */}
+                    <Button
+                        type="submit"
+                        disabled={!inputText.trim()}
+                        size="icon"
+                        className="h-10 w-10 rounded-full shrink-0 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                    >
+                        <Send className="h-5 w-5" />
+                    </Button>
                 </div>
+            </form>
 
-                {/* Error Message */}
-                {micError && (
-                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                        <p className="text-sm font-medium text-red-700 dark:text-red-300 text-center">❌ {micError}</p>
-                    </div>
-                )}
-
-                {/* Instructions */}
-                {isClientConnected && !isRecording && (
-                    <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-                            💡 Click &quot;Start Recording&quot; and speak to interact with the AI assistant
-                        </p>
-                    </div>
-                )}
+            {/* Instructions */}
+            <div className="mt-4 text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                    💡 พิมพ์ข้อความหรือคลิกปุ่มไมค์เพื่อพูด จากนั้นกด Enter หรือปุ่มส่งเพื่อส่งข้อความ
+                </p>
             </div>
         </div>
     );
 };
 
-export default SimliAvatar;
+export default VoiceTextInput;
